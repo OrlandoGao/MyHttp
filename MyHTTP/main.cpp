@@ -5,17 +5,8 @@
 //  Created by Orlando‘s Mac on 2024/9/4.
 //
 
-#include <iostream>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <cstring>
-#include <strings.h>
-#include <fcntl.h>
-#include <pthread.h>
+#include "Header.h"
+#include "ThreadPool.hpp"
 
 #define print(buff) printf("[%s - %d] buff:%s \n", __func__, __LINE__, buff)
 #define buffSize 1024
@@ -203,9 +194,9 @@ void send_file(int client, const char* fileName){
 
 
 //处理客户请求的线程函数
-void* accept_request(void* arg){
+void accept_request(int arg){
     char buff[buffSize];
-    int client = *(int*) arg;
+    int client = arg;
     int bytes_read = get_line(client, buff, buffSize);
     if(bytes_read <= 0){
         error_die("read first line");
@@ -218,7 +209,7 @@ void* accept_request(void* arg){
     //检查方法
     if (strcasecmp(method, "GET") && strcasecmp(method, "POST")) {
         unimplement(client);
-        return 0;
+        return;
     }
     
     //检查路径
@@ -241,7 +232,7 @@ void* accept_request(void* arg){
     close(client);
     
     
-    return  NULL;
+    return;
 }
 
 
@@ -253,6 +244,8 @@ int main() {
     struct sockaddr_in client_addr;
     socklen_t client_aadr_len = sizeof(client_addr);
     
+    ThreadPool pool(10);
+    
     while (1) {
         //阻塞式等待
         int client_sock =  accept(server_sock, (struct sockaddr*)&client_addr, &client_aadr_len);
@@ -260,10 +253,8 @@ int main() {
             error_die("Accept");
         }
         
-        //使用client_sock对用户访问
-        pthread_t thread;
-        pthread_create(&thread, NULL, accept_request, &client_sock);
-        pthread_detach(thread);
+        pool.enqueue([client_sock](){return accept_request(client_sock);});
+        
     }
     
     close(server_sock);
