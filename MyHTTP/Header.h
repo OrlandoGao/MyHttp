@@ -17,5 +17,15 @@
 #include <functional>
 #include <future>
 #include <atomic>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <cstring>
+#include <strings.h>
+#include <fcntl.h>
+#include <pthread.h>
 
 #endif /* Header_h */
