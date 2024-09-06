@@ -168,7 +168,6 @@ void send_file(int client, const char* fileName){
         not_found(client);
     }
     else {
-        //正式发送资源给浏览器
         //获取资源类型
         const char* contect_type = get_contect_type(fileName);
         
@@ -180,14 +179,19 @@ void send_file(int client, const char* fileName){
         while ((bytes_read = read(resource, buff, sizeof(buff))) > 0) {
             bytes_send = send(client, buff, bytes_read, 0);
             if (bytes_send == -1) {
+                //发送出错
                 error_die("send");
             }
         }
         if (bytes_read == -1) {
+            //文件读取错误
             error_die("read failure");
         }
         
+        //关闭文件指针
         close(resource);
+        
+        //返回流量统计
         printf("Has sent %s (%dB) to browser\n", fileName, bytes_send);
     }
 }
@@ -237,6 +241,7 @@ void accept_request(int arg){
 
 
 int main() {
+    //默认端口：80
     unsigned short port = 80;
     int server_sock = startUp(&port);
     std::cout << "http server start, listening port : " << port << std::endl;
@@ -244,6 +249,7 @@ int main() {
     struct sockaddr_in client_addr;
     socklen_t client_aadr_len = sizeof(client_addr);
     
+    //初始化线程池
     ThreadPool pool(10);
     
     while (1) {
@@ -258,6 +264,7 @@ int main() {
         
     }
     
+    //关闭服务器套接字
     close(server_sock);
     return 0;
 }

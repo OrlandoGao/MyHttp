@@ -32,7 +32,7 @@ private:
     // 任务队列，存放需要执行的任务
     std::queue<std::function<void()>> tasks;
     
-    // 互斥锁，用于同步访问任务队列
+    // 互斥锁，用于向任务队列加锁
     std::mutex queue_mutex;
     
     // 条件变量，用于通知线程有新任务到来
