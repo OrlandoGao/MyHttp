@@ -253,6 +253,7 @@ int main() {
             error_die("Accept");
         }
         
+        //将任务推进线程池的任务队列
         pool.enqueue([client_sock](){return accept_request(client_sock);});
         
     }
