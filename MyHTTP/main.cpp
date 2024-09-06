@@ -14,8 +14,11 @@
 #include <unistd.h>
 #include <cstring>
 #include <strings.h>
+#include <fcntl.h>
+#include <pthread.h>
 
 #define print(buff) printf("[%s - %d] buff:%s \n", __func__, __LINE__, buff)
+#define buffSize 1024
 
 //报错并退出
 void error_die(const char* s){
@@ -75,7 +78,6 @@ int startUp(unsigned short *port){
 int get_line(int sock, char* buff, int size){
     char ch = '0';
     int i = 0;
-    
     while (i < size - 1 &&  ch != '\n') {
         int n = recv(sock, &ch, 1, 0);
         if (n > 0) {
@@ -106,9 +108,10 @@ void unimplement(int client){
 }
 
 
+
 //向客户返回网页不存在
 void not_found(int client){
-    char buff[1024];
+    char buff[4096];
     
     strcpy(buff, "HTTP/1.1 404 Not Found\r\n");
     send(client, buff, strlen(buff), 0);
@@ -122,139 +125,123 @@ void not_found(int client){
     strcpy(buff, "\r\n");
     send(client, buff, strlen(buff), 0);
     
-    //发送404
-    sprintf(buff,
-        "<html>                                         \
-            <title>Not Found</title>                    \
-            <body>                                      \
-                <h2>The resource is unavailable</h2>    \
-            </body>                                     \
-        </html>");
-    send(client, buff, sizeof(buff), 0);
+
+    
 }
 
+
+//读取请求文件格式
+const char* get_contect_type(const char* fileName){
+    //找到最后一个'.'
+    const char* ext = strrchr(fileName, '.');
+    
+    if (ext != NULL) {
+            if (strcmp(ext, ".html") == 0 || strcmp(ext, ".htm") == 0) {
+                return "text/html";
+            } else if (strcmp(ext, ".jpg") == 0 || strcmp(ext, ".jpeg") == 0) {
+                return "image/jpeg";
+            } else if (strcmp(ext, ".png") == 0) {
+                return "image/png";
+            } else if (strcmp(ext, ".css") == 0) {
+                return "text/css";
+            } else if (strcmp(ext, ".js") == 0) {
+                return "application/javascript";
+            } else if (strcmp(ext, ".gif") == 0) {
+                return "image/gif";
+            }
+        }
+    //默认返回2进制流
+    return "application/octet-stream";
+}
 
 //发送相应的文件头信息
-void headers(int client){
+void headers(int client, const char* contect_type){
     char buff[1024];
     
-    strcpy(buff, "HTTP/1.1 200 OK\r\n");
+    sprintf(buff, "HTTP/1.1 200 OK\r\n");
     send(client, buff, strlen(buff), 0);
-    strcpy(buff, "Server: OrlandoHttpd/0.1\r\n");
+    sprintf(buff, "Content-type: %s\r\n",contect_type);
     send(client, buff, strlen(buff), 0);
-    strcpy(buff, "Content-type: text/html\r\n");
+    sprintf(buff, "\r\n");
     send(client, buff, strlen(buff), 0);
-    strcpy(buff, "\r\n");
-    send(client, buff, strlen(buff), 0);
-    
+
 }
 
-//发送客户请求的文件
-void cat(int client, FILE* resource){
-    char buff[4096];
-    int count = 0;
-    while (1) {
-        int ret =  fread(buff, sizeof(char), sizeof(buff), resource);
-        if (ret <= 0) {
-            break;
-        }
-        send(client, buff, ret, 0);
-        count += ret;
-    }
-    printf("sent %dB to browser\n", count);
-}
 
 //向客户提交文件
-void server_file(int clinet, const char* fileName){
-    int num = 1;
-    char buff[1024];
-    while (num > 0 && strcmp(buff, "\n")) {
-        num = get_line(clinet, buff, sizeof(buff));
-    }
-    
-    //以文本方式打开
-    FILE *resource = fopen(fileName, "r");
-    if (resource == NULL) {
-        not_found(clinet);
+void send_file(int client, const char* fileName){
+    //打开文件
+    char buff[buffSize];
+    int resource = open(fileName, O_RDONLY);
+    if (resource == -1) {
+        not_found(client);
     }
     else {
         //正式发送资源给浏览器
+        //获取资源类型
+        const char* contect_type = get_contect_type(fileName);
+        
         //发送报文头
-        headers(clinet);
+        headers(client, contect_type);
+        
         //发送请求的资源
-        cat(clinet, resource);
+        ssize_t bytes_read, bytes_send;
+        while ((bytes_read = read(resource, buff, sizeof(buff))) > 0) {
+            bytes_send = send(client, buff, bytes_read, 0);
+            if (bytes_send == -1) {
+                error_die("send");
+            }
+        }
+        if (bytes_read == -1) {
+            error_die("read failure");
+        }
         
-        printf("文件发送完毕!\n");
-        
+        close(resource);
+        printf("Has sent %s (%dB) to browser\n", fileName, bytes_send);
     }
-    fclose(resource);
 }
 
 
 //处理客户请求的线程函数
 void* accept_request(void* arg){
-    char buff[1024];//1k
-    int clinet = *(int*)arg;
-    int num = get_line(clinet, buff, sizeof(buff));
-    print(buff);
-    
-    //读取方法
-    char method[255];
-    int j = 0, i = 0;//j是buff的指针
-    while (!isspace(buff[j]) && i < sizeof(method) - 1) {
-        method[i++] = buff[j++];
+    char buff[buffSize];
+    int client = *(int*) arg;
+    int bytes_read = get_line(client, buff, buffSize);
+    if(bytes_read <= 0){
+        error_die("read first line");
     }
-    method[i] = 0;//'\0'
-    print(method);
     
-    //检查方法(GET,POST) 待扩展
+    //读取方法和路径
+    char method[16], path[256];
+    sscanf(buff, "%s %s", method, path);
+    
+    //检查方法
     if (strcasecmp(method, "GET") && strcasecmp(method, "POST")) {
-        unimplement(clinet);
+        unimplement(client);
         return 0;
     }
     
-    //解析资源文件的路径
-    char url[255];//存放 url
-    i= 0;
-    //跳过空格
-    while (isspace(buff[j]) && j < sizeof(buff)) {
-        ++j;
+    //检查路径
+    if(strcmp(path, "/") == 0){
+        strcpy(path, "/index.html");
     }
+    //拼接完整路径
+    char full_path[512];
+    snprintf(full_path, sizeof(full_path), "htdocs%s", path);
     
-    while (!isspace(buff[j]) && i < sizeof(url) - 1 && j < sizeof(buff)) {
-        url[i++] = buff[j++];
-    }
-    url[i] = 0;
-    print(url);
-    
-    char path[512] = "";
-    sprintf(path, "htdocs%s",url);
-    if (path[strlen(path) - 1] == '/') {
-        strcat(path, "index.html");
-    }
-    print(path);
-    
-    struct stat status;
-    if (stat(path, &status) == -1) {
-        perror("stat");
-        // 请求包剩余数据
-        while (num > 0 && strcmp(buff, "\n")) {
-            num = get_line(clinet, buff, sizeof(buff));
-        }
-        not_found(clinet);
+    //检查文件是否存在
+    struct stat file_stat;
+    if (stat(full_path, &file_stat) == -1) {
+        not_found(client);
     }
     else {
-        if (S_ISDIR(status.st_mode)) {
-            strcat(path, "/index.html");
-        }
-        
-        server_file(clinet, path);
-        
+    // 发送文件
+        send_file(client, full_path);
     }
-
-    close(clinet);
+    close(client);
     
-    return NULL;
+    
+    return  NULL;
 }
 
 
@@ -276,6 +263,7 @@ int main() {
         //使用client_sock对用户访问
         pthread_t thread;
         pthread_create(&thread, NULL, accept_request, &client_sock);
+        pthread_detach(thread);
     }
     
     close(server_sock);
