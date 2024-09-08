@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		554C22682C88477D0008362B /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 554C22672C88477D0008362B /* main.cpp */; };
 		557FD5E32C8B4CC200BE4A6D /* ThreadPool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 557FD5E02C8B4CC200BE4A6D /* ThreadPool.cpp */; };
+		55DD35E12C8D6D58008B259E /* Server.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 55DD35DF2C8D6D58008B259E /* Server.cpp */; };
+		55DD35E42C8D6DDD008B259E /* Connection.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 55DD35E22C8D6DDD008B259E /* Connection.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -30,6 +32,10 @@
 		557FD5E02C8B4CC200BE4A6D /* ThreadPool.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ThreadPool.cpp; sourceTree = "<group>"; };
 		557FD5E12C8B4CC200BE4A6D /* ThreadPool.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ThreadPool.hpp; sourceTree = "<group>"; };
 		557FD5E22C8B4CC200BE4A6D /* Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Header.h; sourceTree = "<group>"; };
+		55DD35DF2C8D6D58008B259E /* Server.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Server.cpp; sourceTree = "<group>"; };
+		55DD35E02C8D6D58008B259E /* Server.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Server.hpp; sourceTree = "<group>"; };
+		55DD35E22C8D6DDD008B259E /* Connection.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Connection.cpp; sourceTree = "<group>"; };
+		55DD35E32C8D6DDD008B259E /* Connection.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Connection.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -67,6 +73,10 @@
 				557FD5E02C8B4CC200BE4A6D /* ThreadPool.cpp */,
 				557FD5E12C8B4CC200BE4A6D /* ThreadPool.hpp */,
 				554C22672C88477D0008362B /* main.cpp */,
+				55DD35DF2C8D6D58008B259E /* Server.cpp */,
+				55DD35E02C8D6D58008B259E /* Server.hpp */,
+				55DD35E22C8D6DDD008B259E /* Connection.cpp */,
+				55DD35E32C8D6DDD008B259E /* Connection.hpp */,
 			);
 			path = MyHTTP;
 			sourceTree = "<group>";
@@ -129,7 +139,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				554C22682C88477D0008362B /* main.cpp in Sources */,
+				55DD35E12C8D6D58008B259E /* Server.cpp in Sources */,
 				557FD5E32C8B4CC200BE4A6D /* ThreadPool.cpp in Sources */,
+				55DD35E42C8D6DDD008B259E /* Connection.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

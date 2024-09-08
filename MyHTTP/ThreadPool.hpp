@@ -8,7 +8,7 @@
 #ifndef ThreadPool_hpp
 #define ThreadPool_hpp
 
-
+#include "Header.h"
 
 // 线程池类
 class ThreadPool {

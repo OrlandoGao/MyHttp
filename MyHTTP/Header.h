@@ -26,5 +26,6 @@
 #include <cstring>
 #include <strings.h>
 #include <fcntl.h>
+#include <fstream>
 
 #endif /* Header_h */
